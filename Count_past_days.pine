@@ -1,0 +1,13 @@
+//@version=6
+indicator("Day Count on Any Timeframe", shorttitle="Day Count", overlay=true)
+
+// Initialize variables
+var int dayCount = na
+
+// Update the day count at the start of each new day
+if (na(dayCount) or dayofweek != dayofweek[1])
+    dayCount := na(dayCount) ? 1 : dayCount + 1
+
+// Label the first bar of each new day with the respective day count
+if (dayofweek != dayofweek[1])
+    label.new(x=bar_index, y=high, text=str.tostring(dayCount), style=label.style_label_down, color=color.green, textcolor=color.white, size=size.small)
