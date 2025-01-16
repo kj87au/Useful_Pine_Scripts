@@ -1,0 +1,46 @@
+//@version=6
+indicator(title="Moving Average Simple with marker", shorttitle="SMA\/M", overlay=true)
+
+// SETTINGS
+days = input.int(5, minval=1, title="Length (Days)")
+src = input(ohlc4, title="Source")
+show_cutoff = input.bool(true, "Show Data Cutoff", "Draws a line where the data cutoff is")
+line_col = input.color(color.white, "Color of the SMA")
+show_period = input.bool(false, "Show Period for Debugging", "Displays a label for showing the period calulation")
+
+// FUNCTIONS
+f_get_len_int(days, multi) =>
+    min_day = 390
+    int len = na
+    if timeframe.isdwm
+        len := days - 1 
+    else
+        len := math.floor((min_day/multi) * days)
+
+f_get_time_int(days) =>
+    var int use_time = na
+    if timeframe.multiplier <= 30 and days > 100
+        log.warning("30min")
+        use_time := 30
+    else if timeframe.multiplier < 5 and days > 15
+        log.warning("5min")
+        use_time := 5
+    else
+        log.warning(timeframe.period)
+        use_time := timeframe.multiplier
+
+// PLOTTING
+// We need to adjust for data loss on lower timeframes
+use_time = f_get_time_int(days)
+out = request.security(syminfo.tickerid, str.tostring(use_time), ta.sma(src, f_get_len_int(days, use_time)))
+plot(out, color=line_col, title="MA")
+
+// Place a shape at the length position
+//count = bar_index + 1
+len = f_get_len_int(days, timeframe.multiplier)
+bar_index_limit = bar_index <= 5000 ? bar_index : 5000
+
+if barstate.islast and show_cutoff and (len < bar_index_limit or timeframe.isdwm)
+    line.new(x1=bar_index[len], y1=low, x2=bar_index[len], y2=high, xloc=xloc.bar_index, extend=extend.both, color=color.new(line_col, 50), style=line.style_solid, width=2)
+if barstate.islast and show_period and (len < bar_index_limit or timeframe.isdwm)
+    label.new(bar_index[len], high, str.tostring(len), color=color.new(line_col, 50))
